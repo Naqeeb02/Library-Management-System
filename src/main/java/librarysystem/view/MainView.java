@@ -670,7 +670,9 @@ public class MainView {
         densitySetting.setPrefWidth(190);
         densitySetting.valueProperty().addListener((observable, oldValue, newValue) ->
                 setCompactRows("Compact".equals(newValue)));
-        appearance.getChildren().add(field("Table row density", densitySetting));
+        VBox densityField = field("Table row density", densitySetting);
+        densitySetting.setMaxWidth(190);
+        appearance.getChildren().add(densityField);
 
         VBox operations = new VBox(14);
         operations.getStyleClass().add("surface-card");
