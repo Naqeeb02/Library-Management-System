@@ -1,39 +1,107 @@
 # Army Central Library Management System
 
 An academic Software Engineering project inspired by Army Central Library,
-Rawalpindi. It is not an officially approved or deployed Army application.
+Rawalpindi, Pakistan. This is a student project and is **not officially
+approved, endorsed, or deployed by the Pakistan Army or the library**.
 
-The Java 21 and JavaFX application provides a dashboard with live collection
-statistics and activity, searchable and filterable book tables, status
-management, and modal forms for adding and editing books. Issuing a book
-requires a return-by date; overdue returns accrue PKR 50 per day, starting the
-day after the due date. Settings includes a Night mode switch for changing
-between light and dark themes during the current session.
+The application is a desktop library catalogue and circulation-management
+prototype built with Java 21 and JavaFX. It provides a branded interface for
+managing book records, tracking their current status, recording issue and
+return dates, and reviewing overdue fines.
 
-The ACL book emblem is a temporary project logo, not an official insignia.
-Replace it only with an authorized logo at `src/main/resources/branding/logo.png`.
-Institution identity and application text are configured in
-`src/main/resources/branding.properties`.
+## Features
+
+- **Dashboard:** Live totals for all, available, issued, and reserved books;
+  recently added books; and recent library activity.
+- **Book catalogue:** Add, edit, view, and delete records containing a book ID,
+  title, and author. Duplicate IDs and incomplete entries are rejected.
+- **Search and filters:** Search by book ID, title, or author and filter the
+  catalogue by Available, Issued, or Reserved status. Table columns can be
+  sorted.
+- **Circulation:** Issuing a book requires a return-by date. Record a return
+  through the return action; the book then becomes available again.
+- **Overdue fines:** The fine is PKR 50 per day, beginning the day after the
+  return-by date. Returning on or before the due date incurs no fine.
+- **Reservations:** Books can be marked Reserved and viewed in the Reserved
+  Books section. This prototype does not implement a reservation queue.
+- **Settings:** Switch between light and dark themes for the current session,
+  and reset the search and status filters.
+- **About and branding:** Shows the application identity, academic-project
+  context, version, and technology information. The temporary ACL book emblem
+  is a project mark, not an official insignia.
+
+## Technology
+
+- Java 21
+- JavaFX 21
+- Apache Maven
+- JUnit 5
+
+The application follows a small MVC structure:
+
+- `librarysystem.view` builds the JavaFX screens and dialogs.
+- `librarysystem.controller` connects interface actions to the service.
+- `librarysystem.service` validates and performs catalogue and circulation
+  operations.
+- `librarysystem.model` contains the book, status, and activity models.
 
 ## Requirements
 
 - JDK 21
-- Apache Maven 3.9+
+- Apache Maven 3.9 or later
 
-## Run from the project directory
+Confirm the installations in Command Prompt or PowerShell:
 
-```powershell
+```text
+java -version
+mvn -version
+```
+
+## Run the application
+
+Open Command Prompt and change to the project directory (keep the quotation
+marks because the path contains spaces):
+
+```bat
+cd /d "E:\5th SEMESTER\Software Constrction lab\OEL SC\LibraryBookManagement"
 mvn clean test
 mvn javafx:run
 ```
 
-The JavaFX window remains open while the application is running. Close it to
-return to the terminal.
+The test command compiles the project and runs the service tests. The JavaFX
+window stays open while the application is running; close the window to return
+to the terminal.
+
+In PowerShell, use `Set-Location` instead of `cd /d`:
+
+```powershell
+Set-Location "E:\5th SEMESTER\Software Constrction lab\OEL SC\LibraryBookManagement"
+mvn clean test
+mvn javafx:run
+```
+
+## Data and project limitations
+
+Book and activity data are held in memory. **Changes are lost when the
+application closes**; this version does not use a database or save records to
+disk. The fine rate is currently fixed at PKR 50 per overdue day. The night
+theme setting applies only until the application is closed.
+
+## Branding and logo
+
+Application identity text is configured in
+[`src/main/resources/branding.properties`](src/main/resources/branding.properties).
+If an authorized logo is supplied for this project, place it at
+`src/main/resources/branding/logo.png`. The application preserves the image
+proportions. Do not use an unofficial or fabricated institutional insignia.
 
 ## Generate Javadoc
 
-```powershell
+From the project directory, run:
+
+```text
 mvn javadoc:javadoc
 ```
 
-HTML documentation is available in `docs/javadoc/index.html`.
+The generated documentation is available at
+[`docs/javadoc/index.html`](docs/javadoc/index.html).
