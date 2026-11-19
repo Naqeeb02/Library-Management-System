@@ -188,7 +188,7 @@
 }
 
 .stats-grid {
-    -fx-tile-alignment: center-left;
+    -fx-alignment: center-left;
 }
 
 .stat-card, .surface-card, .table-card {

@@ -27,12 +27,12 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.paint.Color;
@@ -530,19 +530,41 @@ public class MainView {
         addBookButton.setOnAction(event -> addHandler.run());
         welcome.getChildren().addAll(welcomeText, welcomeSpacer, addBookButton);
 
-        TilePane stats = new TilePane();
+        GridPane stats = new GridPane();
         stats.setHgap(16);
         stats.setVgap(16);
-        stats.setPrefColumns(4);
-        stats.setPrefTileWidth(250);
         stats.getStyleClass().add("stats-grid");
-        stats.widthProperty().addListener((observable, oldWidth, newWidth) ->
-                stats.setPrefColumns(newWidth.doubleValue() < 850 ? 2 : 4));
-        stats.getChildren().addAll(
+        List<VBox> statCards = List.of(
                 statCard("Total books", totalBooksValue, "In your collection", "stat-navy", "▤"),
                 statCard("Available", availableBooksValue, "Ready to be borrowed", "stat-green", "✓"),
                 statCard("Issued", issuedBooksValue, "Currently checked out", "stat-amber", "↗"),
                 statCard("Reserved", reservedBooksValue, "Waiting for pickup", "stat-blue", "▱"));
+        statCards.forEach(card -> {
+            card.setMinWidth(0);
+            card.setMaxWidth(Double.MAX_VALUE);
+        });
+        Runnable updateStatsLayout = () -> {
+            int columns = stats.getWidth() < 760 ? 2 : 4;
+            stats.getChildren().clear();
+            stats.getColumnConstraints().clear();
+            for (int column = 0; column < columns; column++) {
+                ColumnConstraints constraints = new ColumnConstraints();
+                constraints.setPercentWidth(100.0 / columns);
+                constraints.setHgrow(Priority.ALWAYS);
+                stats.getColumnConstraints().add(constraints);
+            }
+            for (int index = 0; index < statCards.size(); index++) {
+                stats.add(statCards.get(index), index % columns, index / columns);
+            }
+        };
+        stats.widthProperty().addListener((observable, oldWidth, newWidth) -> {
+            int previousColumns = oldWidth.doubleValue() < 760 ? 2 : 4;
+            int columns = newWidth.doubleValue() < 760 ? 2 : 4;
+            if (columns != previousColumns) {
+                updateStatsLayout.run();
+            }
+        });
+        updateStatsLayout.run();
 
         VBox recentCard = new VBox(14);
         recentCard.getStyleClass().add("surface-card");
