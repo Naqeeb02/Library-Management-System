@@ -1,11 +1,10 @@
 # Army Central Library Management System
 
 An academic Software Engineering project inspired by Army Central Library,
-Rawalpindi, Pakistan. This is a student project and is **not officially
-approved, endorsed, or deployed by the Pakistan Army or the library**.
+Rawalpindi, Pakistan. This is a Software Construction lab project.
 
 The application is a desktop library catalogue and circulation-management
-prototype built with Java 21 and JavaFX. It provides a branded interface for
+prototype built with Java and JavaFX. It provides a branded interface for
 managing book records, tracking their current status, recording issue and
 return dates, and reviewing overdue fines.
 
@@ -32,8 +31,8 @@ return dates, and reviewing overdue fines.
 
 ## Technology
 
-- Java 21
-- JavaFX 21
+- Java 
+- JavaFX 
 - Apache Maven
 - JUnit 5
 
@@ -63,7 +62,6 @@ Open Command Prompt and change to the project directory (keep the quotation
 marks because the path contains spaces):
 
 ```bat
-cd /d "E:\5th SEMESTER\Software Constrction lab\OEL SC\LibraryBookManagement"
 mvn clean test
 mvn javafx:run
 ```
@@ -75,7 +73,7 @@ to the terminal.
 In PowerShell, use `Set-Location` instead of `cd /d`:
 
 ```powershell
-Set-Location "E:\5th SEMESTER\Software Constrction lab\OEL SC\LibraryBookManagement"
+Set-Location "---"
 mvn clean test
 mvn javafx:run
 ```
@@ -84,24 +82,4 @@ mvn javafx:run
 
 Book and activity data are held in memory. **Changes are lost when the
 application closes**; this version does not use a database or save records to
-disk. The fine rate is currently fixed at PKR 50 per overdue day. The night
-theme setting applies only until the application is closed.
-
-## Branding and logo
-
-Application identity text is configured in
-[`src/main/resources/branding.properties`](src/main/resources/branding.properties).
-If an authorized logo is supplied for this project, place it at
-`src/main/resources/branding/logo.png`. The application preserves the image
-proportions. Do not use an unofficial or fabricated institutional insignia.
-
-## Generate Javadoc
-
-From the project directory, run:
-
-```text
-mvn javadoc:javadoc
-```
-
-The generated documentation is available at
-[`docs/javadoc/index.html`](docs/javadoc/index.html).
+disk. The fine rate is currently fixed at PKR 50 per overdue day. 
