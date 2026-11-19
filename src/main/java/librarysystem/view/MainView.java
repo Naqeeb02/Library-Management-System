@@ -665,16 +665,22 @@ public class MainView {
         });
         operations.getChildren().add(resetFilters);
 
-        VBox identity = new VBox(8);
+        VBox identity = new VBox(10);
         identity.getStyleClass().add("surface-card");
-        identity.getChildren().addAll(sectionTitle("Institution identity"),
+        Label profileDescription = new Label(
+                "A library workspace for organizing the book collection, checking availability, "
+                        + "and keeping issue, return, due-date, and reservation records clear.");
+        profileDescription.getStyleClass().add("page-subtitle");
+        profileDescription.setWrapText(true);
+        Label projectNote = new Label(
+                "Academic project. The ACL emblem is a neutral project mark, not an official insignia.");
+        projectNote.getStyleClass().add("detail-value");
+        projectNote.setWrapText(true);
+        identity.getChildren().addAll(sectionTitle("Library profile"),
                 new Label("Library: " + branding.getLibraryName()),
-                new Label("Institution: " + branding.getInstitutionName()),
-                new Label(logoAvailable()
-                        ? "Provided logo resource is loaded from branding/logo.png."
-                        : "No logo was provided. The temporary ACL project emblem is in use."),
-                new Label("Update src/main/resources/branding.properties and add the supplied "
-                        + "logo as src/main/resources/branding/logo.png when available."));
+                new Label("Location: " + branding.getInstitutionName()),
+                profileDescription,
+                projectNote);
         settingsPage.getChildren().addAll(appearance, operations, identity);
         settingsScroll = addScrollablePage(settingsPage);
     }
