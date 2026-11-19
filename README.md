@@ -7,7 +7,8 @@ The Java 21 and JavaFX application provides a dashboard with live collection
 statistics and activity, searchable and filterable book tables, status
 management, and modal forms for adding and editing books. Issuing a book
 requires a return-by date; overdue returns accrue PKR 50 per day, starting the
-day after the due date.
+day after the due date. Settings includes a Night mode switch for changing
+between light and dark themes during the current session.
 
 The ACL book emblem is a temporary project logo, not an official insignia.
 Replace it only with an authorized logo at `src/main/resources/branding/logo.png`.

@@ -12,6 +12,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
@@ -91,8 +92,7 @@ public class MainView {
     private final TextField searchField = new TextField();
     private final ComboBox<String> statusFilter = new ComboBox<>(
             FXCollections.observableArrayList("All books", "Available", "Issued", "Reserved"));
-    private final ComboBox<String> densitySetting = new ComboBox<>(
-            FXCollections.observableArrayList("Comfortable", "Compact"));
+    private final CheckBox nightModeSetting = new CheckBox("Night mode");
     private final TableView<Book> managementTable = new TableView<>();
     private final TableView<Book> recentTable = new TableView<>();
     private final Label totalBooksValue = new Label("0");
@@ -220,6 +220,7 @@ public class MainView {
     /** Opens the add/edit dialog and returns form data to the supplied handler. */
     public void showBookDialog(Book selectedBook, Consumer<BookFormData> onSave) {
         Dialog<BookFormData> dialog = new Dialog<>();
+        applyDialogTheme(dialog.getDialogPane());
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle(selectedBook == null ? "Add new book" : "Edit book");
         dialog.getDialogPane().getStyleClass().add("book-dialog");
@@ -295,6 +296,7 @@ public class MainView {
     /** Displays book details and offers the available record operations. */
     public void showBookDetails(Book book, long fineToDate) {
         Dialog<BookAction> dialog = new Dialog<>();
+        applyDialogTheme(dialog.getDialogPane());
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Book details");
         dialog.setHeaderText(book.getTitle());
@@ -340,6 +342,7 @@ public class MainView {
     /** Opens the required return-by date picker before an issue operation. */
     public void showIssueDialog(Book book, Consumer<LocalDate> onIssue) {
         Dialog<LocalDate> dialog = new Dialog<>();
+        applyDialogTheme(dialog.getDialogPane());
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Issue book");
         dialog.getDialogPane().getStyleClass().add("book-dialog");
@@ -386,6 +389,7 @@ public class MainView {
     /** Opens a focused status picker for the selected book. */
     public void showStatusDialog(Book book, Consumer<BookStatus> onSave) {
         Dialog<BookStatus> dialog = new Dialog<>();
+        applyDialogTheme(dialog.getDialogPane());
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Change book status");
         dialog.setHeaderText("Choose a status for " + book.getTitle());
@@ -403,6 +407,7 @@ public class MainView {
     /** Shows a confirmation prompt and returns true only for an affirmative response. */
     public boolean confirmDelete(Book book) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        applyDialogTheme(alert.getDialogPane());
         alert.initModality(Modality.APPLICATION_MODAL);
         alert.setTitle("Delete book");
         alert.setHeaderText("Delete \"" + book.getTitle() + "\"?");
@@ -413,6 +418,7 @@ public class MainView {
     /** Confirms a return operation before changing an issued book to available. */
     public boolean confirmReturn(Book book) {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        applyDialogTheme(alert.getDialogPane());
         alert.initModality(Modality.APPLICATION_MODAL);
         alert.setTitle("Return book");
         alert.setHeaderText("Record the return of \"" + book.getTitle() + "\"?");
@@ -423,6 +429,7 @@ public class MainView {
     /** Displays a short informational, warning, or error notification. */
     public void showMessage(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
+        applyDialogTheme(alert.getDialogPane());
         alert.initModality(Modality.APPLICATION_MODAL);
         alert.setTitle(title);
         alert.setHeaderText(null);
@@ -436,6 +443,19 @@ public class MainView {
         root.setCenter(workspace);
         workspace.setTop(createToolbar());
         workspace.setCenter(pageHost);
+    }
+
+    private void setNightMode(boolean enabled) {
+        root.getStyleClass().remove("theme-dark");
+        if (enabled) {
+            root.getStyleClass().add("theme-dark");
+        }
+    }
+
+    private void applyDialogTheme(javafx.scene.control.DialogPane dialogPane) {
+        if (root.getStyleClass().contains("theme-dark")) {
+            dialogPane.getStyleClass().add("theme-dark");
+        }
     }
 
     private VBox createSidebar() {
@@ -664,15 +684,15 @@ public class MainView {
 
         VBox appearance = new VBox(15);
         appearance.getStyleClass().add("surface-card");
+        Label themeDescription = new Label(
+                "Choose a light or dark display theme for comfortable day or night reading.");
+        themeDescription.getStyleClass().add("muted-text");
         appearance.getChildren().addAll(sectionTitle("Appearance"),
-                new Label("Choose how book rows are displayed in tables."));
-        densitySetting.setValue("Comfortable");
-        densitySetting.setPrefWidth(190);
-        densitySetting.valueProperty().addListener((observable, oldValue, newValue) ->
-                setCompactRows("Compact".equals(newValue)));
-        VBox densityField = field("Table row density", densitySetting);
-        densitySetting.setMaxWidth(190);
-        appearance.getChildren().add(densityField);
+                themeDescription);
+        nightModeSetting.getStyleClass().add("theme-toggle");
+        nightModeSetting.selectedProperty().addListener((observable, oldValue, nightMode) ->
+                setNightMode(nightMode));
+        appearance.getChildren().add(nightModeSetting);
 
         VBox operations = new VBox(14);
         operations.getStyleClass().add("surface-card");
@@ -700,9 +720,13 @@ public class MainView {
                 "Academic project. The ACL emblem is a neutral project mark, not an official insignia.");
         projectNote.getStyleClass().add("detail-value");
         projectNote.setWrapText(true);
+        Label libraryName = new Label("Library: " + branding.getLibraryName());
+        libraryName.getStyleClass().add("detail-value");
+        Label location = new Label("Location: " + branding.getInstitutionName());
+        location.getStyleClass().add("detail-value");
         identity.getChildren().addAll(sectionTitle("Library profile"),
-                new Label("Library: " + branding.getLibraryName()),
-                new Label("Location: " + branding.getInstitutionName()),
+                libraryName,
+                location,
                 profileDescription,
                 projectNote);
         settingsPage.getChildren().addAll(appearance, operations, identity);
@@ -1116,10 +1140,4 @@ public class MainView {
         }
     }
 
-    private void setCompactRows(boolean compact) {
-        for (TableView<Book> table : List.of(managementTable, recentTable)) {
-            table.getStyleClass().remove("compact");
-            if (compact) table.getStyleClass().add("compact");
-        }
-    }
 }
