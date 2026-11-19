@@ -2,7 +2,8 @@ package librarysystem;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import librarysystem.controller.LibraryController;
 import librarysystem.service.LibraryService;
@@ -16,14 +17,20 @@ public class MainApp extends Application {
         MainView view = new MainView();
         new LibraryController(service, view);
 
-        Scene scene = new Scene(view.getRoot(), 1100, 700);
+        Rectangle2D screen = Screen.getPrimary().getVisualBounds();
+        double width = Math.min(1240, screen.getWidth() - 160);
+        double height = Math.min(800, screen.getHeight() - 72);
+        Scene scene = new Scene(view.getRoot(), width, height);
         scene.getStylesheets().add(
                 getClass().getResource("/styles/main.css").toExternalForm());
-        primaryStage.setTitle("Library Book Management System");
+        primaryStage.setTitle(view.getApplicationName());
+        primaryStage.getIcons().add(view.createWindowIcon());
         primaryStage.setScene(scene);
-        primaryStage.setMinWidth(900);
-        primaryStage.setMinHeight(620);
+        primaryStage.setMinWidth(Math.min(900, width));
+        primaryStage.setMinHeight(Math.min(580, height));
         primaryStage.show();
+        primaryStage.setX(screen.getMinX() + Math.max(0, (screen.getWidth() - width) / 2));
+        primaryStage.setY(screen.getMinY() + Math.max(0, (screen.getHeight() - height) / 2));
     }
 
     public static void main(String[] args) {

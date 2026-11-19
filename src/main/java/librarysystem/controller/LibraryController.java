@@ -1,118 +1,136 @@
 package librarysystem.controller;
 
 import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import librarysystem.model.Book;
+import librarysystem.model.BookStatus;
 import librarysystem.service.LibraryException;
 import librarysystem.service.LibraryService;
 import librarysystem.view.MainView;
 
-import java.util.Optional;
-
-/** Connects the JavaFX view to the library service. */
+/** Connects the dashboard and book-management actions to the library service. */
 public class LibraryController {
     private final LibraryService service;
     private final MainView view;
 
+    /** Creates the controller and connects view actions to service operations. */
     public LibraryController(LibraryService service, MainView view) {
         this.service = service;
         this.view = view;
-        wireEvents();
+        view.setAddHandler(this::addBook);
+        view.setEditHandler(this::editBook);
+        view.setDeleteHandler(this::deleteBook);
+        view.setDetailsHandler(this::handleDetailsAction);
+        view.setStatusHandler(this::changeStatus);
         refresh();
     }
 
-    private void wireEvents() {
-        view.getAddButton().setOnAction(event -> addBook());
-        view.getUpdateButton().setOnAction(event -> updateBook());
-        view.getDeleteButton().setOnAction(event -> deleteBook());
-        view.getStatusButton().setOnAction(event -> changeStatus());
-        view.getClearButton().setOnAction(event -> view.clearForm());
-        view.getTable().getSelectionModel().selectedItemProperty().addListener(
-                (observable, oldBook, selectedBook) -> {
-                    if (selectedBook != null) view.loadBook(selectedBook);
-                });
-    }
-
     private void addBook() {
+        view.showBookDialog(null, data -> {
+            try {
+                service.addBook(data.id(), data.title(), data.author());
+                refresh();
+                view.showMessage(Alert.AlertType.INFORMATION, "Book added",
+                        "The book was added to your collection.");
+            } catch (LibraryException exception) {
+                showError(exception);
+            }
+        });
+    }
+
+    private void editBook(Book book) {
+        view.showBookDialog(book, data -> {
+            try {
+                service.updateBook(book.getId(), data.title(), data.author());
+                refresh();
+                view.showMessage(Alert.AlertType.INFORMATION, "Book updated",
+                        "The book details were saved.");
+            } catch (LibraryException exception) {
+                showError(exception);
+            }
+        });
+    }
+
+    private void deleteBook(Book book) {
+        if (!view.confirmDelete(book)) {
+            return;
+        }
         try {
-            service.addBook(view.getIdField().getText(),
-                    view.getTitleField().getText(),
-                    view.getAuthorField().getText());
+            service.deleteBook(book.getId());
             refresh();
-            view.clearForm();
-            view.showAlert(Alert.AlertType.INFORMATION, "Book Added",
-                    "The book was added successfully.");
+            view.showMessage(Alert.AlertType.INFORMATION, "Book deleted",
+                    "The book was removed from your collection.");
         } catch (LibraryException exception) {
             showError(exception);
         }
     }
 
-    private void updateBook() {
-        Book selected = getSelectedBook();
-        if (selected == null) return;
+    private void changeStatus(Book book, BookStatus status) {
+        if (status == BookStatus.ISSUED) {
+            view.showIssueDialog(book, dueDate -> issueBook(book, dueDate));
+            return;
+        }
         try {
-            service.updateBook(selected.getId(),
-                    view.getTitleField().getText(),
-                    view.getAuthorField().getText());
+            service.updateBookStatus(book.getId(), status);
             refresh();
-            view.loadBook(selected);
-            view.showAlert(Alert.AlertType.INFORMATION, "Book Updated",
-                    "The book details were updated successfully.");
+            view.showMessage(Alert.AlertType.INFORMATION, "Status updated",
+                    "The status for \"" + book.getTitle() + "\" is now " + status + ".");
         } catch (LibraryException exception) {
             showError(exception);
         }
     }
 
-    private void deleteBook() {
-        Book selected = getSelectedBook();
-        if (selected == null) return;
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setTitle("Delete Book");
-        confirmation.setHeaderText(null);
-        confirmation.setContentText("Delete book '" + selected.getTitle() +
-                "' (ID " + selected.getId() + ")?");
-        Optional<ButtonType> result = confirmation.showAndWait();
-        if (result.isEmpty() || result.get() != ButtonType.OK) return;
-
+    private void issueBook(Book book, java.time.LocalDate dueDate) {
         try {
-            service.deleteBook(selected.getId());
-            view.clearForm();
+            service.issueBook(book.getId(), dueDate);
             refresh();
-            view.showAlert(Alert.AlertType.INFORMATION, "Book Deleted",
-                    "The book was deleted successfully.");
+            view.showMessage(Alert.AlertType.INFORMATION, "Book issued",
+                    "\"" + book.getTitle() + "\" is due on " + dueDate
+                            + ". Late returns are fined PKR "
+                            + LibraryService.DAILY_OVERDUE_FINE_PKR + " per day.");
         } catch (LibraryException exception) {
             showError(exception);
         }
     }
 
-    private void changeStatus() {
-        Book selected = getSelectedBook();
-        if (selected == null) return;
+    private void returnBook(Book book) {
+        if (!view.confirmReturn(book)) {
+            return;
+        }
         try {
-            service.updateBookStatus(selected.getId(), view.getStatusComboBox().getValue());
+            long fine = service.returnBook(book.getId());
             refresh();
-            view.loadBook(selected);
-            view.showAlert(Alert.AlertType.INFORMATION, "Status Updated",
-                    "The book status was changed successfully.");
+            String message = fine == 0
+                    ? "The book was returned on time. No fine is due."
+                    : "The book was returned late. Fine due: PKR " + fine + ".";
+            view.showMessage(Alert.AlertType.INFORMATION, "Book returned", message);
         } catch (LibraryException exception) {
             showError(exception);
         }
     }
 
-    private Book getSelectedBook() {
-        Book selected = view.getTable().getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            view.showAlert(Alert.AlertType.WARNING, "No Book Selected",
-                    "Select a book from the table first.");
+    private void handleDetailsAction(Book book, MainView.BookAction action) {
+        switch (action) {
+            case VIEW_DETAILS -> {
+                try {
+                    view.showBookDetails(book, service.getOverdueFine(book.getId()));
+                } catch (LibraryException exception) {
+                    showError(exception);
+                }
+            }
+            case EDIT -> editBook(book);
+            case CHANGE_STATUS -> view.showStatusDialog(book,
+                    status -> changeStatus(book, status));
+            case DELETE -> deleteBook(book);
+            case RETURN_BOOK -> returnBook(book);
         }
-        return selected;
     }
 
     private void refresh() {
-        view.refreshTable(service.getAllBooks());
+        view.setBooks(service.getAllBooks());
+        view.setActivities(service.getRecentActivities());
     }
 
     private void showError(LibraryException exception) {
-        view.showAlert(Alert.AlertType.ERROR, "Operation Failed", exception.getMessage());
+        view.showMessage(Alert.AlertType.ERROR, "Unable to save changes", exception.getMessage());
     }
 }
