@@ -56,6 +56,7 @@ import java.util.function.Consumer;
 public class MainView {
     private enum Page {
         DASHBOARD("Dashboard", "Overview"),
+        AVAILABLE("Available Books", "Library / Available"),
         BOOKS("Books Management", "Library / Books"),
         ISSUED("Issued Books", "Library / Issued"),
         RESERVED("Reserved Books", "Library / Reserved"),
@@ -226,30 +227,39 @@ public class MainView {
         dialog.getDialogPane().getStyleClass().add("book-dialog");
 
         TextField id = new TextField(selectedBook == null ? "" : selectedBook.getId());
-        id.setPromptText("e.g. ACL-1042");
+        id.setPromptText("ACL-001 (required prefix ACL-)");
         id.setDisable(selectedBook != null);
         id.setPrefHeight(42);
         TextField title = new TextField(selectedBook == null ? "" : selectedBook.getTitle());
-        title.setPromptText("Enter book title");
+        title.setPromptText("Must start with a letter; letters, numbers, spaces only");
         title.setPrefHeight(42);
         TextField author = new TextField(selectedBook == null ? "" : selectedBook.getAuthor());
-        author.setPromptText("Enter author name");
+        author.setPromptText("Letters and spaces only");
         author.setPrefHeight(42);
-        Label validation = new Label();
-        validation.getStyleClass().add("validation-message");
+
+        Label idError = validationLabel();
+        Label titleError = validationLabel();
+        Label authorError = validationLabel();
 
         GridPane fields = new GridPane();
         fields.setVgap(16);
         fields.setHgap(16);
-        fields.add(field("BOOK ID", id), 0, 0);
-        fields.add(field("BOOK TITLE", title), 0, 1);
-        fields.add(field("AUTHOR", author), 0, 2);
+        fields.add(labeledField("BOOK ID", id, idError), 0, 0);
+        fields.add(labeledField("BOOK TITLE", title, titleError), 0, 1);
+        fields.add(labeledField("AUTHOR", author, authorError), 0, 2);
+        Label formatHint = new Label(
+                "Book ID must start with ACL- and include text after it. "
+                        + "Title must start with a letter and may contain letters, numbers, and spaces. "
+                        + "Author may contain letters and spaces only.");
+        formatHint.getStyleClass().add("dialog-hint");
+        formatHint.setWrapText(true);
+        int row = 3;
+        fields.add(formatHint, 0, row++);
         if (selectedBook == null) {
             Label statusNote = new Label("New books are added as AVAILABLE.");
             statusNote.getStyleClass().add("dialog-hint");
-            fields.add(statusNote, 0, 3);
+            fields.add(statusNote, 0, row++);
         }
-        fields.add(validation, 0, 4);
         fields.setPadding(new Insets(0, 0, 0, 0));
 
         VBox dialogContent = new VBox(18);
@@ -271,6 +281,18 @@ public class MainView {
         dialog.getDialogPane().setPrefWidth(500);
         dialog.getDialogPane().setMinWidth(460);
 
+        Runnable validateLive = () -> {
+            if (!id.isDisabled()) {
+                idError.setText(bookIdInputError(id.getText()));
+            }
+            titleError.setText(bookTitleInputError(title.getText()));
+            authorError.setText(bookAuthorInputError(author.getText()));
+        };
+        id.textProperty().addListener((obs, oldValue, newValue) -> validateLive.run());
+        title.textProperty().addListener((obs, oldValue, newValue) -> validateLive.run());
+        author.textProperty().addListener((obs, oldValue, newValue) -> validateLive.run());
+        validateLive.run();
+
         ButtonType saveType = new ButtonType(
                 selectedBook == null ? "Save book" : "Save changes",
                 ButtonBar.ButtonData.OK_DONE);
@@ -280,8 +302,13 @@ public class MainView {
         dialog.getDialogPane().lookupButton(ButtonType.CANCEL).getStyleClass()
                 .add("button-dialog-cancel");
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-            if (id.getText().isBlank() || title.getText().isBlank() || author.getText().isBlank()) {
-                validation.setText("Complete all required fields before saving.");
+            String idMessage = id.isDisabled() ? "" : bookIdRequiredError(id.getText());
+            String titleMessage = bookTitleRequiredError(title.getText());
+            String authorMessage = bookAuthorRequiredError(author.getText());
+            idError.setText(idMessage);
+            titleError.setText(titleMessage);
+            authorError.setText(authorMessage);
+            if (!idMessage.isEmpty() || !titleMessage.isEmpty() || !authorMessage.isEmpty()) {
                 event.consume();
             }
         });
@@ -476,11 +503,12 @@ public class MainView {
         VBox navigation = new VBox(5);
         navigation.getStyleClass().add("navigation");
         Button dashboard = navButton("▦", "Dashboard", Page.DASHBOARD);
-        Button allBooks = navButton("▤", "Books Management", Page.BOOKS);
+        Button booksManagement = navButton("▤", "Book Management", Page.BOOKS);
         Button addBook = navButton("+", "Add New Book", null);
+        Button available = navButton("?", "Available Books", Page.AVAILABLE);
         Button issued = navButton("↗", "Issued Books", Page.ISSUED);
         Button reserved = navButton("▱", "Reserved Books", Page.RESERVED);
-        navigation.getChildren().addAll(dashboard, allBooks, addBook, issued, reserved);
+        navigation.getChildren().addAll(dashboard, booksManagement, addBook, available, issued, reserved);
         addBook.setOnAction(event -> addHandler.run());
 
         Region spacer = new Region();
@@ -523,12 +551,17 @@ public class MainView {
         searchField.setPrefWidth(220);
         searchField.setMinWidth(170);
         searchField.textProperty().addListener((observable, oldValue, newValue) -> filterBooks());
+        searchField.setOnAction(event -> performSearch());
+        Button searchButton = button("Search", "button-secondary");
+        searchButton.setOnAction(event -> performSearch());
+        HBox searchGroup = new HBox(8, searchField, searchButton);
+        searchGroup.setAlignment(Pos.CENTER_LEFT);
         Label date = new Label(LocalDate.now().format(
                 DateTimeFormatter.ofPattern("EEE, MMM d", Locale.ENGLISH)));
         date.getStyleClass().add("toolbar-date");
         Label profile = new Label("L");
         profile.getStyleClass().add("toolbar-avatar");
-        toolbar.getChildren().addAll(titles, spacer, searchField, date, profile);
+        toolbar.getChildren().addAll(titles, spacer, searchGroup, date, profile);
         return toolbar;
     }
 
@@ -983,6 +1016,79 @@ public class MainView {
         return wrapper;
     }
 
+    private VBox labeledField(String labelText, Node control, Label errorLabel) {
+        VBox wrapper = new VBox(6);
+        Label label = new Label(labelText);
+        label.getStyleClass().add("field-label");
+        if (control instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+        }
+        wrapper.getChildren().addAll(label, control, errorLabel);
+        return wrapper;
+    }
+
+    private Label validationLabel() {
+        Label label = new Label();
+        label.getStyleClass().add("validation-message");
+        label.setWrapText(true);
+        label.setMinHeight(Region.USE_PREF_SIZE);
+        return label;
+    }
+
+    private String bookIdInputError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "";
+        }
+        String normalized = value.trim();
+        if (!normalized.startsWith("ACL-") || normalized.length() <= 4) {
+            return "Book ID must start with 'ACL-' followed by at least one character.";
+        }
+        return "";
+    }
+
+    private String bookIdRequiredError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "Book ID cannot be empty.";
+        }
+        return bookIdInputError(value);
+    }
+
+    private String bookTitleInputError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "";
+        }
+        String normalized = value.trim();
+        if (!normalized.matches("[\\p{L}][\\p{L}\\p{N} ]*")) {
+            return "Title must start with a letter and may contain only letters, numbers, and spaces.";
+        }
+        return "";
+    }
+
+    private String bookTitleRequiredError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "Title cannot be empty.";
+        }
+        return bookTitleInputError(value);
+    }
+
+    private String bookAuthorInputError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "";
+        }
+        String normalized = value.trim();
+        if (!normalized.matches("[\\p{L} ]+")) {
+            return "Author name must contain letters and spaces only.";
+        }
+        return "";
+    }
+
+    private String bookAuthorRequiredError(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return "Author name cannot be empty.";
+        }
+        return bookAuthorInputError(value);
+    }
+
     private Label brandLabel(String text, String styleClass) {
         Label label = new Label(text);
         label.getStyleClass().add(styleClass);
@@ -1045,7 +1151,10 @@ public class MainView {
         currentPage = page;
         pageTitle.setText(page.title);
         breadcrumb.setText(page.breadcrumb);
-        if (page == Page.ISSUED) {
+        if (page == Page.AVAILABLE) {
+            bookPageHeading.setText("Available Books");
+            bookPageSubtitle.setText("Review and manage books currently available in the collection.");
+        } else if (page == Page.ISSUED) {
             bookPageHeading.setText("Issued Books");
             bookPageSubtitle.setText("Review and manage books currently marked as issued.");
         } else if (page == Page.RESERVED) {
@@ -1057,7 +1166,7 @@ public class MainView {
         }
         Node target = switch (page) {
             case DASHBOARD -> dashboardScroll;
-            case BOOKS, ISSUED, RESERVED -> booksScroll;
+            case AVAILABLE, BOOKS, ISSUED, RESERVED -> booksScroll;
             case SETTINGS -> settingsScroll;
             case ABOUT -> aboutScroll;
         };
@@ -1066,7 +1175,9 @@ public class MainView {
             node.setVisible(visible);
             node.setManaged(visible);
         }
-        if (page == Page.ISSUED) {
+        if (page == Page.AVAILABLE) {
+            statusFilter.setValue("Available");
+        } else if (page == Page.ISSUED) {
             statusFilter.setValue("Issued");
         } else if (page == Page.RESERVED) {
             statusFilter.setValue("Reserved");
@@ -1099,6 +1210,11 @@ public class MainView {
                 }
             }
         }
+    }
+
+    private void performSearch() {
+        filterBooks();
+        showPage(Page.BOOKS);
     }
 
     private void filterBooks() {

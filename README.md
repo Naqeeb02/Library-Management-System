@@ -13,7 +13,10 @@ return dates, and reviewing overdue fines.
 - **Dashboard:** Live totals for all, available, issued, and reserved books;
   recently added books; and recent library activity.
 - **Book catalogue:** Add, edit, view, and delete records containing a book ID,
-  title, and author. Duplicate IDs and incomplete entries are rejected.
+  title, and author. Book IDs must start with `ACL-` and include text after the
+  prefix. Titles must start with a letter and may contain letters, numbers, and
+  spaces. Author names may contain letters and spaces only. Duplicate book IDs
+  and duplicate titles are rejected, along with invalid entries.
 - **Search and filters:** Search by book ID, title, or author and filter the
   catalogue by Available, Issued, or Reserved status. Table columns can be
   sorted.
